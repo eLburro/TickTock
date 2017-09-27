@@ -75,11 +75,11 @@ void isr () {
 }
 
 void reset() {
-    for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_LEDS; i++) {
     leds[i].setRGB(0, 0, 0);
     FastLED.show();
   }
-  
+
   // activate pull-up resistors
   digitalWrite (2, HIGH);
   digitalWrite (3, HIGH);
@@ -90,7 +90,7 @@ void reset() {
 
 void setup()  {
   Serial.begin (115200);
-  
+
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
   reset();
 }
