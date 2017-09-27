@@ -8,9 +8,9 @@ const int INTERVAL = 3;
 
 volatile boolean fired = false;
 volatile long rotaryCount = 0;
-volatile long oldRotaryCount = 0;
-int tmpIntervalPos = 0;
-int tmpIntervalNeg = 0;
+volatile int tmpIntervalPos = 0;
+volatile int tmpIntervalNeg = 0;
+long oldRotaryCount = 0;
 int ledLightUp = 0;
 
 CRGB leds[NUM_LEDS];
