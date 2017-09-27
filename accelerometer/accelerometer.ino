@@ -1,6 +1,6 @@
 int scale = 200;
 boolean micro_is_5V = true;
-
+//int a = 0;
 void setup()  {
   // Initialize serial communication at 115200 baud
   Serial.begin(115200);
