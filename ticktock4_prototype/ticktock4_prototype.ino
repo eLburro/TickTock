@@ -4,23 +4,33 @@
 #define ROTARY_PIN_A 2
 #define ROTARY_PIN_B 3
 
-unsigned long start, current, paused, goal;
+const int pressureSensorPin = A0;
+int pressureValue; //save analog value
+
+unsigned long startTime, currentTime, pausedTime,  breakTime, goal;
 int stepCount = 0;
 const int INTERVAL = 3;
-<<<<<<< HEAD
 const int MINUTE = 10;
-=======
-const long MINUTE = 10;
->>>>>>> f30cc4eef58f37dc1939033d81e1bdfacc13d695
 
 volatile boolean fired = false;
 volatile long rotaryCount = 0;
 volatile long oldRotaryCount = 0;
 int tmpIntervalPos = 0;
 int tmpIntervalNeg = 0;
+boolean paused = false;
 
 
 CRGB leds[MAX_STEP];
+
+
+void setup()  {
+  Serial.begin (115200);
+  
+  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, MAX_STEP);
+  reset();
+}
+
+
 
 void countUp() {
   tmpIntervalNeg = 0;
@@ -101,74 +111,106 @@ void reset() {
   attachInterrupt(0, isr, CHANGE);   // ROTARY_PIN_A
   attachInterrupt(1, isr, CHANGE);   // ROTARY_PIN_B
 
-  start=0;
-  paused=0;
-  goal=0;
+  startTime = 0;
+  pausedTime = 0;
+  goal = 0;
   stepCount = 0;
-  
-  
-}
+  paused = false;
+  breakTime= 0;
 
-void setup()  {
-  Serial.begin (115200);
-
-  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, MAX_STEP);
-  reset();
 }
 
 
-void pause(){
+void pause() {
+
+  paused = true;
+  pausedTime = millis() / 1000;
+  Serial.print("The paused time starts: ");
+  Serial.println(pausedTime);
+ 
+}
+
+void activate(){
   
+      paused=false;
+      currentTime = millis() / 1000;
+      
+      Serial.print("The paused time: ");
+      Serial.println(currentTime - pausedTime);
+
+      //if more than one pause is given
+      breakTime = breakTime + (currentTime - pausedTime);
+      // I couldnt just substract from the start time , cause when it goes below zero, it gives random
 }
 
 
 
 void loop()  {
 
-  if (fired)
-  {
-    //Serial.print ("Count = ");
-    //Serial.println (rotaryCount);
-    fired = false;
+  pressureValue = analogRead(pressureSensorPin);       //Read and save analog value from potentiometer
 
-    if (oldRotaryCount < rotaryCount) {
-      // clockwise
-      Serial.println ("clockwise");
-      start = millis() / 1000;
-      Serial.print ("Step count before enters the if: ");
-        Serial.println (stepCount);
-      if (stepCount > 0) {
-        Serial.print ("Step count after entering the if: ");
-        Serial.println (stepCount);
-        //turning off the led
-     
-        
-        stepCount--;
-        Serial.print ("Step count is decreased = ");
-        Serial.println (stepCount);
-        goal = stepCount * MINUTE;
-        Serial.print ("Goal is = ");
-        Serial.println (goal);
 
-         Serial.println ("turning of the led");
-        leds[stepCount].setRGB(0, 0, 0);
-        FastLED.show();
+  if ((pressureValue > 500) && startTime != 0) {
+    //check if it is already paused
+    if (!paused) {
+      pause();
+    }
 
-      }
+  } else {
+    //
+      
+    // the countdown is activated after the pause
+    if (paused && startTime != 0) {
+      
+        activate();
+    }
 
-    } else if (oldRotaryCount > rotaryCount) {
-      // counter-clockwise
-      Serial.println ("counterclockwise");
-      start = millis() / 1000;
+    if (fired) {
+
+
+      fired = false;
+
+      if (oldRotaryCount < rotaryCount) {
+        // clockwise
+        Serial.println ("clockwise");
+        startTime = millis() / 1000;
+        Serial.print("The start time time: ");
+        Serial.println(startTime);
+
+        if (stepCount > 0) {
+
+
+          stepCount--;
+          Serial.print ("Step count is = ");
+          Serial.println (stepCount);
+
+
+          goal = stepCount * MINUTE;
+          Serial.print ("Goal is = ");
+          Serial.println (goal);
+
+
+          leds[stepCount].setRGB(0, 0, 0);
+          FastLED.show();
+
+        }
+
+      } else if (oldRotaryCount > rotaryCount) {
+        // counter-clockwise
+        Serial.println ("counterclockwise");
+        startTime = millis() / 1000;
+        Serial.print("The start time time: ");
+        Serial.println(startTime);
 
         if (stepCount < MAX_STEP) {
           //turning on the led
           leds[stepCount].setRGB(0, 255, 0);
           FastLED.show();
-        
+
           stepCount++;
           Serial.print ("Step count is = ");
           Serial.println (stepCount);
+
           goal = stepCount * MINUTE;
           Serial.print ("Goal is = ");
           Serial.println (goal);
@@ -178,55 +220,33 @@ void loop()  {
 
       oldRotaryCount = rotaryCount;
     }
-  }
 
-<<<<<<< HEAD
     //getting the current clock time
-    current = millis() / 1000;
+    currentTime = millis() / 1000;
 
-  
     //checks if the operation time is bigger than a minute
-    
-    if (((current - start) > MINUTE) && (stepCount!=0)) {
-      
-      start = start + MINUTE;
-      Serial.print ("Time passed the step = ");
+
+    if ((((currentTime - startTime) - breakTime) > MINUTE) && (stepCount != 0)) {
+
+      startTime = startTime + MINUTE;
+      Serial.print (" passed the step = ");
       Serial.println (stepCount);
-      
+
       if (stepCount > 0) {
-        
+
         stepCount--;
         Serial.print ("Step count is = ");
         Serial.println (stepCount);
       }
-      
+
       leds[stepCount].setRGB(0, 0, 0);
       FastLED.show();
 
-      
+
     }
-    
 
-  
-=======
-  
-  current = millis() / 1000;
-
-  if ((current - start) > MINUTE) {
-    start = start + MINUTE;
-    Serial.print ("Time passed the step = ");
-    Serial.println (ledLightUp);
-
-    leds[ledLightUp-1].setRGB(0, 0, 0);
-    FastLED.show();
-
-    if (ledLightUp > 0) {
-      ledLightUp--;
-    }
   }
 
-  //Serial.println ("");
->>>>>>> f30cc4eef58f37dc1939033d81e1bdfacc13d695
 
 
 }
