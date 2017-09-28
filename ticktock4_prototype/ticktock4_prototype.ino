@@ -7,7 +7,11 @@
 unsigned long start, current, paused, goal;
 int stepCount = 0;
 const int INTERVAL = 3;
+<<<<<<< HEAD
 const int MINUTE = 10;
+=======
+const long MINUTE = 10;
+>>>>>>> f30cc4eef58f37dc1939033d81e1bdfacc13d695
 
 volatile boolean fired = false;
 volatile long rotaryCount = 0;
@@ -174,7 +178,9 @@ void loop()  {
 
       oldRotaryCount = rotaryCount;
     }
+  }
 
+<<<<<<< HEAD
     //getting the current clock time
     current = millis() / 1000;
 
@@ -202,6 +208,25 @@ void loop()  {
     
 
   
+=======
+  
+  current = millis() / 1000;
 
+  if ((current - start) > MINUTE) {
+    start = start + MINUTE;
+    Serial.print ("Time passed the step = ");
+    Serial.println (ledLightUp);
 
+    leds[ledLightUp-1].setRGB(0, 0, 0);
+    FastLED.show();
+
+    if (ledLightUp > 0) {
+      ledLightUp--;
+    }
   }
+
+  //Serial.println ("");
+>>>>>>> f30cc4eef58f37dc1939033d81e1bdfacc13d695
+
+
+}
