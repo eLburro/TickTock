@@ -1,23 +1,22 @@
 #include <FastLED.h>
-#define NUM_LEDS 5
+#define MAX_STEP 5
 #define LED_PIN 6
 #define ROTARY_PIN_A 2
 #define ROTARY_PIN_B 3
 
 unsigned long start, current, paused, goal;
-int maxStep = 5;
 int stepCount = 0;
 const int INTERVAL = 3;
-const long MINUTE = 20;
+const int MINUTE = 10;
 
 volatile boolean fired = false;
 volatile long rotaryCount = 0;
 volatile long oldRotaryCount = 0;
 int tmpIntervalPos = 0;
 int tmpIntervalNeg = 0;
-int ledLightUp = 0;
 
-CRGB leds[NUM_LEDS];
+
+CRGB leds[MAX_STEP];
 
 void countUp() {
   tmpIntervalNeg = 0;
@@ -86,7 +85,7 @@ void isr() {
 }
 
 void reset() {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < MAX_STEP; i++) {
     leds[i].setRGB(0, 0, 0);
     FastLED.show();
   }
@@ -97,13 +96,25 @@ void reset() {
 
   attachInterrupt(0, isr, CHANGE);   // ROTARY_PIN_A
   attachInterrupt(1, isr, CHANGE);   // ROTARY_PIN_B
+
+  start=0;
+  paused=0;
+  goal=0;
+  stepCount = 0;
+  
+  
 }
 
 void setup()  {
   Serial.begin (115200);
 
-  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
+  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, MAX_STEP);
   reset();
+}
+
+
+void pause(){
+  
 }
 
 
@@ -112,41 +123,48 @@ void loop()  {
 
   if (fired)
   {
-    Serial.print ("Count = ");
-    Serial.println (rotaryCount);
+    //Serial.print ("Count = ");
+    //Serial.println (rotaryCount);
     fired = false;
 
     if (oldRotaryCount < rotaryCount) {
       // clockwise
+      Serial.println ("clockwise");
       start = millis() / 1000;
-      if (ledLightUp > 0) {
-        leds[ledLightUp].setRGB(0, 0, 0);
-        FastLED.show();
-        ledLightUp--;
-
-      }
-
+      Serial.print ("Step count before enters the if: ");
+        Serial.println (stepCount);
       if (stepCount > 0) {
-
+        Serial.print ("Step count after entering the if: ");
+        Serial.println (stepCount);
+        //turning off the led
+     
+        
         stepCount--;
+        Serial.print ("Step count is decreased = ");
+        Serial.println (stepCount);
         goal = stepCount * MINUTE;
         Serial.print ("Goal is = ");
         Serial.println (goal);
+
+         Serial.println ("turning of the led");
+        leds[stepCount].setRGB(0, 0, 0);
+        FastLED.show();
 
       }
 
     } else if (oldRotaryCount > rotaryCount) {
       // counter-clockwise
+      Serial.println ("counterclockwise");
       start = millis() / 1000;
-      if (ledLightUp < NUM_LEDS) {
-        leds[ledLightUp].setRGB(0, 255, 0);
-        FastLED.show();
-        ledLightUp++;
 
-
-
-        if (stepCount < maxStep) {
+        if (stepCount < MAX_STEP) {
+          //turning on the led
+          leds[stepCount].setRGB(0, 255, 0);
+          FastLED.show();
+        
           stepCount++;
+          Serial.print ("Step count is = ");
+          Serial.println (stepCount);
           goal = stepCount * MINUTE;
           Serial.print ("Goal is = ");
           Serial.println (goal);
@@ -157,23 +175,33 @@ void loop()  {
       oldRotaryCount = rotaryCount;
     }
 
-    //for (int i = 1; i <= goal / MINUTE; i++) {
+    //getting the current clock time
     current = millis() / 1000;
 
-    if ((current - start) > MINUTE) {
+  
+    //checks if the operation time is bigger than a minute
+    
+    if (((current - start) > MINUTE) && (stepCount!=0)) {
+      
       start = start + MINUTE;
       Serial.print ("Time passed the step = ");
-      Serial.println (ledLightUp);
-
-      leds[ledLightUp].setRGB(0, 0, 0);
+      Serial.println (stepCount);
+      
+      if (stepCount > 0) {
+        
+        stepCount--;
+        Serial.print ("Step count is = ");
+        Serial.println (stepCount);
+      }
+      
+      leds[stepCount].setRGB(0, 0, 0);
       FastLED.show();
 
-      if (ledLightUp > 0) {
-        ledLightUp--;
-      }
+      
     }
+    
 
-    //Serial.println ("");
+  
 
 
   }
