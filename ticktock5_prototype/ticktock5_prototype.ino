@@ -163,6 +163,8 @@ boolean isShakingResetActivated() {
   return (scaledX > SHAKE_INTENSITY || scaledY > SHAKE_INTENSITY || scaledZ > SHAKE_INTENSITY);
 }
 
+// check the pressure sensor if the robot has been flipped over
+// if yes then the application pauses
 boolean isTimerPaused() {
   // read and save analog value from potentiometer 0-1023
   pressureValue = analogRead(ANA_PIN_PRESSURE);
@@ -285,16 +287,7 @@ void loop()  {
     }
 
     // check if robot has flipped and paused
-    if (isTimerPaused) {
-      paused = start;
-
-    } else {
-      // if application was paused then restore the values
-      if (paused > 0) {
-        start = paused;
-        paused = 0;
-      }
-
+    if (!isTimerPaused) {
       updateLeds();
     }
   }
