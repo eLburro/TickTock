@@ -138,6 +138,11 @@ boolean isEmergencyStop() {
   return false;
 }
 
+// same functionality as Arduino's standard map function, except using floats
+float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 // read the shake intensity and return true if any axis is shaked harder than SHAKE_INTENSITY
 boolean isShakingResetActivated() {
   // get raw accelerometer data for each axis
@@ -147,7 +152,7 @@ boolean isShakingResetActivated() {
 
   // ccale accelerometer ADC readings into common units
   float scaledX;
-  float scaledY; 
+  float scaledY;
   float scaledZ;
   int scale = 200;
 
@@ -160,19 +165,19 @@ boolean isShakingResetActivated() {
 
 boolean isTimerPaused() {
   // read and save analog value from potentiometer 0-1023
-  pressureValue = analogRead(sensorPin);
+  pressureValue = analogRead(ANA_PIN_PRESSURE);
 
   return (pressureValue > 750);
 }
 
 // utility to change the color of a specific LED
-void changeLEDColor(ledNum, g, r, b) {
+void changeLEDColor(int ledNum, int g, int r, int b) {
   leds[ledNum].setRGB(g, r, b);
   FastLED.show();
 }
 
 // makes the vibrator vibrate for the requested time
-void vibrate(milliSeconds) {
+void vibrate(long milliSeconds) {
   Serial.print("Vibrate for ");
   Serial.print(milliSeconds);
   Serial.print(" milliseconds");
@@ -263,7 +268,7 @@ void setup()  {
   Serial.begin (115200);
   FastLED.addLeds<NEOPIXEL, DIG_PIN_LED>(leds, MAX_STEPS);
   pinMode(DIG_PIN_VIBRATOR, OUTPUT);
-  
+
   reset();
 }
 
@@ -278,18 +283,18 @@ void loop()  {
     if (rotaryFired) {
       updateRotaryPosition();
     }
-    
+
     // check if robot has flipped and paused
     if (isTimerPaused) {
       paused = start;
-      
+
     } else {
       // if application was paused then restore the values
       if (paused > 0) {
         start = paused;
         paused = 0;
       }
-      
+
       updateLeds();
     }
   }
