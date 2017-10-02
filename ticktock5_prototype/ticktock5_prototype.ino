@@ -15,7 +15,7 @@
 // constants
 const int MAX_STEPS = 12;
 const int ROTARY_INTERVAL = 3;
-const int SECONDS = 10;
+const int SECONDS = 5;
 const int SHAKE_INTENSITY = 500;
 
 // shared variables between ISR and other functions
@@ -29,10 +29,12 @@ int tmpIntervalNeg = 0;
 
 int pressureValue = 0;
 
-long start;
-long current;
-long paused;
+long startTime;
+long currentTime;
+long pauseTime;
 long goal;
+long breakTime;
+boolean paused;
 int stepCount = 0;
 
 CRGB leds[MAX_STEPS];
@@ -126,10 +128,12 @@ void reset() {
   attachInterrupt(0, isr, CHANGE);   // DIG_PIN_ROTARY_A
   attachInterrupt(1, isr, CHANGE);   // DIG_PIN_ROTARY_B
 
-  start = 0;
-  paused = 0;
+  startTime = 0;
+  pauseTime = 0;
   goal = 0;
+  breakTime = 0;
   stepCount = 0;
+  paused = false;
 }
 
 // check if a wifi signal appears to stop the application
@@ -193,10 +197,29 @@ void vibrate(long milliSeconds) {
   }
 }
 
+void pause() {
+  paused = true;
+  pauseTime = millis() / 1000;
+  Serial.print("The paused time starts: ");
+  Serial.println(pauseTime);
+}
+
+void activate() {
+  paused = false;
+  currentTime = millis() / 1000;
+
+  Serial.print("The paused time: ");
+  Serial.println(currentTime - pauseTime);
+
+  //if more than one pause is given
+  breakTime = breakTime + (currentTime - pauseTime);
+  // I couldnt just substract from the start time , cause when it goes below zero, it gives random
+}
+
 // update the leds and timers based on the manual rotation
 void updateRotaryPosition() {
   rotaryFired = false;
-  start = millis() / 1000;
+  startTime = millis() / 1000;
 
   if (oldRotaryPosition < rotaryPosition) {
     // clockwise rotation
@@ -242,11 +265,11 @@ void updateRotaryPosition() {
 // check the timers and update the leds automatically
 void updateLeds() {
   //getting the current clock time
-  current = millis() / 1000;
+  currentTime = millis() / 1000;
 
   //checks if the operation time is bigger than the SECONDS
-  if (((current - start) > SECONDS) && (stepCount != 0)) {
-    start += SECONDS;
+  if ((((currentTime - startTime) - breakTime) > SECONDS) && (stepCount != 0)) {
+    startTime += SECONDS;
 
     Serial.print ("Time passed the step = ");
     Serial.println (stepCount);
@@ -287,7 +310,19 @@ void loop()  {
     }
 
     // check if robot has flipped and paused
-    if (!isTimerPaused) {
+    if (isTimerPaused()) {
+      //check if it is already paused
+      if (!paused) {
+        pause();
+      }
+
+    } else {
+      // the countdown is activated after the pause
+      if (paused && startTime != 0) {
+
+        activate();
+      }
+
       updateLeds();
     }
   }
