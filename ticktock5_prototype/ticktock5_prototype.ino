@@ -16,7 +16,7 @@
 const int MAX_STEPS = 12;
 const int ROTARY_INTERVAL = 3;
 const int SECONDS = 5;
-const int SHAKE_INTENSITY = 500;
+const int SHAKE_INTENSITY = 50;
 
 // shared variables between ISR and other functions
 volatile boolean rotaryFired = false;
@@ -128,6 +128,8 @@ void reset() {
   attachInterrupt(0, isr, CHANGE);   // DIG_PIN_ROTARY_A
   attachInterrupt(1, isr, CHANGE);   // DIG_PIN_ROTARY_B
 
+  analogWrite(DIG_PIN_VIBRATOR, 0);
+
   startTime = 0;
   pauseTime = 0;
   goal = 0;
@@ -160,11 +162,25 @@ boolean isShakingResetActivated() {
   float scaledZ;
   int scale = 200;
 
-  scaledX = mapf(rawX, 0, 675, -scale, scale); // 3.3/5 * 1023 =~ 675
-  scaledY = mapf(rawY, 0, 675, -scale, scale);
-  scaledZ = mapf(rawZ, 0, 675, -scale, scale);
+  scaledX = mapf(rawX, 0, 675, 0, scale); // 3.3/5 * 1023 =~ 675
+  scaledY = mapf(rawY, 0, 675, 0, scale);
+  scaledZ = mapf(rawZ, 0, 675, 0, scale);
 
-  return (scaledX > SHAKE_INTENSITY || scaledY > SHAKE_INTENSITY || scaledZ > SHAKE_INTENSITY);
+  /*
+    if (scaledX > SHAKE_INTENSITY || scaledY > SHAKE_INTENSITY || scaledZ > SHAKE_INTENSITY) {
+
+    Serial.println("Shaker: ");
+    Serial.println(scaledX);
+    Serial.println(scaledY);
+    Serial.println(scaledZ);
+
+    return true;
+    } else {
+    return false;
+    }*/
+
+  return false;
+
 }
 
 // check the pressure sensor if the robot has been flipped over
@@ -189,12 +205,14 @@ void vibrate(long milliSeconds) {
   Serial.print(" milliseconds");
   Serial.println("");
 
-  for (int i = 0; i < milliSeconds; i + 200) {
+  for (int i = 0; i < milliSeconds; i += 200) {
     analogWrite(DIG_PIN_VIBRATOR, 255);
     delay(100);
     analogWrite(DIG_PIN_VIBRATOR, 0);
     delay(100);
   }
+
+  analogWrite(DIG_PIN_VIBRATOR, 0);
 }
 
 void pause() {
@@ -214,6 +232,12 @@ void activate() {
   //if more than one pause is given
   breakTime = breakTime + (currentTime - pauseTime);
   // I couldnt just substract from the start time , cause when it goes below zero, it gives random
+}
+
+// will be called when the timer finishes automatically
+void timerFinished() {
+  vibrate(2000);
+  Serial.println("Finished!");
 }
 
 // update the leds and timers based on the manual rotation
@@ -277,6 +301,10 @@ void updateLeds() {
     if (stepCount > 0) {
       stepCount--;
 
+      if (stepCount == 0) {
+        timerFinished();
+      }
+
       Serial.print ("Step count is = ");
       Serial.println (stepCount);
     }
@@ -300,6 +328,7 @@ void setup()  {
 void loop()  {
   // stop application when no emergency broadcast signal appears
   if (isEmergencyStop() || isShakingResetActivated()) {
+    Serial.println("REEESEEEET!!!!");
     reset();
 
   } else {
@@ -319,7 +348,6 @@ void loop()  {
     } else {
       // the countdown is activated after the pause
       if (paused && startTime != 0) {
-
         activate();
       }
 
