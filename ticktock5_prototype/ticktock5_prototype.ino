@@ -13,7 +13,7 @@
 #define ANA_PIN_AXIS_Z A3
 
 // constants
-const int MAX_STEPS = 5;
+const int MAX_STEPS = 12;
 const int ROTARY_INTERVAL = 3;
 const int SECONDS = 10;
 const int SHAKE_INTENSITY = 500;

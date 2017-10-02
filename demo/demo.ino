@@ -1,5 +1,5 @@
 #include <FastLED.h>
-#define MAX_STEP 6
+#define MAX_STEP 12
 #define LED_PIN 6
 #define ROTARY_PIN_A 2
 #define ROTARY_PIN_B 3
