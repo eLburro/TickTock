@@ -15,8 +15,10 @@
 // constants
 const int MAX_STEPS = 12;
 const int ROTARY_INTERVAL = 2;
-const int SECONDS = 5;
+const int SECONDS = 12;
 const int SHAKE_INTENSITY = 200;
+const int PRESSURE_SENSITIVITY = 50;
+const int DEFAULT_BRIGHTNESS = 150;
 
 // shared variables between ISR and other functions
 volatile boolean rotaryFired = false;
@@ -37,7 +39,7 @@ long breakTime;
 boolean paused;
 int stepCount = 0;
 
-int lightOrder[] = {0,11,10,9,8,7,6,5,4,3,2,1};
+int lightOrder[] = {0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 
 CRGB leds[MAX_STEPS];
 /******* END VARIABLES & DEFINITIONS ********/
@@ -118,7 +120,7 @@ void isr() {
 void reset() {
   // turn leds black
   for (int i = 0; i < MAX_STEPS; i++) {
-    leds[i].setRGB(0, 0, 0);
+    changeLEDColor(i, 0, 0, 0, DEFAULT_BRIGHTNESS);
     FastLED.show();
   }
 
@@ -177,14 +179,64 @@ boolean isTimerPaused() {
   // read and save analog value from potentiometer 0-1023
   pressureValue = analogRead(ANA_PIN_PRESSURE);
 
-  return (pressureValue > 750);
+  //DEBUG
+  return false;
+  return (pressureValue > PRESSURE_SENSITIVITY);
 }
 
 // utility to change the color of a specific LED
-void changeLEDColor(int ledNum, int r, int g, int b) {
+void changeLEDColor(int ledNum, int r, int g, int b, int brightness) {
   leds[lightOrder[ledNum]].setRGB(g, r, b);
-  FastLED.setBrightness(150);
+  FastLED.setBrightness(brightness);
   FastLED.show();
+}
+
+// countown of the last step until the finish
+void lastStepCountdown() {
+  pulseLEDs(1);
+
+  // turn leds on
+  for (int i = 0; i < MAX_STEPS; i++ ) {
+    changeLEDColor(i, 15, 90, 90, DEFAULT_BRIGHTNESS);
+  }
+  FastLED.show();
+
+  int delayTime = SECONDS / 12 * 1000;
+
+  for (int i = 11; i >= 0; i--) {
+    changeLEDColor(i, 0, 0, 0, DEFAULT_BRIGHTNESS);
+    FastLED.show();
+    delay(delayTime);
+  }
+}
+
+// make leds pulsing
+void pulseLEDs(int amount) {
+  // turn them off
+  for (int i = 0; i < MAX_STEPS; i++ ) {
+    leds[i].setRGB(0, 0, 0);
+  }
+  FastLED.show();
+
+  for (int a = 0; a < amount; a++) {
+    // fade in
+    for (int brightness = 0; brightness < 255; brightness += 20) {
+      for (int i = 0; i < MAX_STEPS; i++ ) {
+        changeLEDColor(i, 15, 90, 90, brightness);
+      }
+      FastLED.show();
+      delay(50);
+    }
+
+    // fade out
+    for (int brightness = 255; brightness > 0; brightness -= 20) {
+      for (int i = 0; i < MAX_STEPS; i++ ) {
+        changeLEDColor(i, 15, 90, 90, brightness);
+      }
+      FastLED.show();
+      delay(50);
+    }
+  }
 }
 
 // makes the vibrator vibrate for the requested time
@@ -227,6 +279,7 @@ void activate() {
 void timerFinished() {
   vibrate(2000);
   Serial.println("Finished!");
+  reset();
 }
 
 // update the leds and timers based on the manual rotation
@@ -244,8 +297,8 @@ void updateRotaryPosition() {
       stepCount--;
       goal = stepCount * SECONDS;
 
-      //turning off the led
-      changeLEDColor(stepCount, 0, 0, 0);
+      // turning off the led
+      changeLEDColor(stepCount, 0, 0, 0, DEFAULT_BRIGHTNESS);
 
       Serial.print ("Step count is decreased = ");
       Serial.println (stepCount);
@@ -258,8 +311,8 @@ void updateRotaryPosition() {
     Serial.println ("counterclockwise");
 
     if (stepCount < MAX_STEPS) {
-      //turning on the led
-      changeLEDColor(stepCount, 15, 90, 90);
+      // turning on the led
+      changeLEDColor(stepCount, 15, 90, 90, DEFAULT_BRIGHTNESS);
 
       // TODO check if this is really after turning on led
       stepCount++;
@@ -290,7 +343,11 @@ void updateLeds() {
     if (stepCount > 0) {
       stepCount--;
 
-      if (stepCount == 0) {
+      if (stepCount == 1) {
+        // indicate last step
+        lastStepCountdown();
+
+      } else if (stepCount == 0) {
         timerFinished();
       }
 
@@ -299,7 +356,7 @@ void updateLeds() {
     }
 
     // turn off led
-    changeLEDColor(stepCount, 0, 0, 0);
+    changeLEDColor(stepCount, 0, 0, 0, DEFAULT_BRIGHTNESS);
   }
 }
 /******* END FUNCTIONS ********/
