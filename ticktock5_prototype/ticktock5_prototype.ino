@@ -14,9 +14,9 @@
 
 // constants
 const int MAX_STEPS = 12;
-const int ROTARY_INTERVAL = 3;
+const int ROTARY_INTERVAL = 2;
 const int SECONDS = 5;
-const int SHAKE_INTENSITY = 50;
+const int SHAKE_INTENSITY = 200;
 
 // shared variables between ISR and other functions
 volatile boolean rotaryFired = false;
@@ -36,6 +36,8 @@ long goal;
 long breakTime;
 boolean paused;
 int stepCount = 0;
+
+int lightOrder[] = {0,11,10,9,8,7,6,5,4,3,2,1};
 
 CRGB leds[MAX_STEPS];
 /******* END VARIABLES & DEFINITIONS ********/
@@ -166,21 +168,7 @@ boolean isShakingResetActivated() {
   scaledY = mapf(rawY, 0, 675, 0, scale);
   scaledZ = mapf(rawZ, 0, 675, 0, scale);
 
-  /*
-    if (scaledX > SHAKE_INTENSITY || scaledY > SHAKE_INTENSITY || scaledZ > SHAKE_INTENSITY) {
-
-    Serial.println("Shaker: ");
-    Serial.println(scaledX);
-    Serial.println(scaledY);
-    Serial.println(scaledZ);
-
-    return true;
-    } else {
-    return false;
-    }*/
-
-  return false;
-
+  return (scaledX > SHAKE_INTENSITY || scaledY > SHAKE_INTENSITY || scaledZ > SHAKE_INTENSITY);
 }
 
 // check the pressure sensor if the robot has been flipped over
@@ -193,8 +181,9 @@ boolean isTimerPaused() {
 }
 
 // utility to change the color of a specific LED
-void changeLEDColor(int ledNum, int g, int r, int b) {
-  leds[ledNum].setRGB(g, r, b);
+void changeLEDColor(int ledNum, int r, int g, int b) {
+  leds[lightOrder[ledNum]].setRGB(g, r, b);
+  FastLED.setBrightness(150);
   FastLED.show();
 }
 
@@ -270,7 +259,7 @@ void updateRotaryPosition() {
 
     if (stepCount < MAX_STEPS) {
       //turning on the led
-      changeLEDColor(stepCount, 0, 255, 0);
+      changeLEDColor(stepCount, 15, 90, 90);
 
       // TODO check if this is really after turning on led
       stepCount++;
